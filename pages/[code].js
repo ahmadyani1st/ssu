@@ -298,25 +298,43 @@ export async function getServerSideProps(context) {
       };
     }
 
-    // 2. EKSTRAK DAN PROSES URL DENGAN AFFID JIKA ADA
+    // 2. EKSTRAK DAN PROSES URL DENGAN AFFID DAN SOURCE PARAMETER
     let targetUrl = firebaseData.linkproduk;
     const affId = firebaseData.affId; // Ambil affId dari Firebase
     
-    // Jika ada affId, tambahkan ke URL
-    if (affId && targetUrl) {
+    // Jika ada affId ATAU code, proses URL
+    if ((affId || code) && targetUrl) {
       try {
         const url = new URL(targetUrl);
         
-        // Hapus parameter affId yang sudah ada jika ada
+        // Hapus parameter affId dan source yang sudah ada jika ada
         url.searchParams.delete('affId');
+        url.searchParams.delete('source');
         
-        // Tambahkan affId dari Firebase
-        url.searchParams.append('affId', affId);
+        // Tambahkan affId dari Firebase jika ada
+        if (affId) {
+          url.searchParams.append('affId', affId);
+        }
+        
+        // SELALU tambahkan parameter source dengan nilai dari ${code}
+        if (code) {
+          url.searchParams.append('source', code);
+        }
         
         targetUrl = url.toString();
       } catch (urlError) {
-        console.error('Error processing URL with affId:', urlError);
+        console.error('Error processing URL:', urlError);
         // Tetap gunakan URL asli jika ada error
+      }
+    } else if (code && targetUrl) {
+      // Jika hanya ada code tanpa affId, tetap tambahkan source parameter
+      try {
+        const url = new URL(targetUrl);
+        url.searchParams.delete('source');
+        url.searchParams.append('source', code);
+        targetUrl = url.toString();
+      } catch (urlError) {
+        console.error('Error adding source parameter:', urlError);
       }
     }
     
